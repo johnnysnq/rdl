@@ -114,23 +114,25 @@ def dump(file_name, db, ignore_none_value=False):
 
 
 def load(file_name, db, f):
-    if f:
-        print('==> Flush database!')
-        db.flushdb()
+   if f:
+       print('==> Flush database!')
+       db.flushdb()
 
-    with open(file_name, 'r') as f:
-        loop = 0
-        for line in f:
-            k, v = tuple(line.split('\t'))
-            v = base64.b64decode(v)
-            db.restore(k, 0, v)
+   with open(file_name, 'r') as f:
+       loop = 0
+       for line in f:
+           k, v = tuple(line.split('\t'))
+           v = base64.b64decode(v)
+           try:
+               db.restore(k, 0, v)
+           except redis.exceptions.ResponseError:
+               print k,v
+               continue
+           loop += 1
+           if loop % BUF_LIMIT == 0:
+               print_loop(loop)
 
-            loop += 1
-            if loop % BUF_LIMIT == 0:
-                print_loop(loop)
-
-        print_loop(loop, False)
-
+       print_loop(loop, False)
 
 def main():
     parser = argparse.ArgumentParser(description="Redis dump-load tool.", add_help=False)
